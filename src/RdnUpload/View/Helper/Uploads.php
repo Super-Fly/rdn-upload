@@ -56,6 +56,17 @@ class Uploads extends AbstractHelper
 		return $this->container->get($id);
 	}
 
+    /**
+     * @param string $id
+     * @param array $options
+     *
+     * @return ObjectInterface
+     */
+    public function getPublicFile($id, $options = array())
+    {
+        return $this->container->getPublicFile($id, $options);
+    }
+
 	/**
 	 * @param string $id
 	 *

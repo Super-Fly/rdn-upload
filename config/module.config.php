@@ -19,18 +19,12 @@ return array(
 	'rdn_upload_adapters' => array(
 		'factories' => array(
 			'Filesystem' => 'RdnUpload\Factory\Adapter\Filesystem',
-			'Gaufrette' => 'RdnUpload\Factory\Adapter\Gaufrette',
 		),
 
 		'configs' => array(
 			'Filesystem' => array(
 				'upload_path' => 'data/uploads',
 				'public_path' => '/files',
-			),
-
-			'Gaufrette' => array(
-				'filesystem' => null,
-				'public_path' => null,
 			),
 		),
 	),

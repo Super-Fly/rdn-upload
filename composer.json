@@ -20,9 +20,6 @@
 		"mikey179/vfsStream": "*",
 		"phpunit/phpunit": "3.*"
 	},
-	"suggests": {
-		"knplabs/gaufrette": "Provides a lot more adapters"
-	},
 	"autoload": {
 		"psr-0": {
 			"RdnUpload\\": "src/"

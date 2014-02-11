@@ -19,10 +19,10 @@ Activate the module by including it in your `application.config.php` file:
 <?php
 
 return array(
-	'modules' => array(
-		'RdnUpload',
-		// ...
-	),
+        'modules' => array(
+                'RdnUpload',
+                // ...
+        ),
 );
 ~~~
 
@@ -57,6 +57,14 @@ $object = $uploads->get($id);
 
 echo $object->getBasename(); // sample-foo.png
 echo $object->getPublicUrl(); // /files/b/6/1/b61cd9dbf7fdabc7bd67f27cc066d0fc50eacdc4/sample-foo.png
+
+Resize
+echo $uploads->getPublicFile('b/6/1/b61cd9dbf7fdabc7bd67f27cc066d0fc50eacdc4/sample-foo.png', array(
+            'resize' =>array(
+                'width' => 100,
+                'height' => 100
+            )
+        ));
 ~~~
 
 ## How to create adapters

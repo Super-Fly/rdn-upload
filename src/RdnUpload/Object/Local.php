@@ -38,7 +38,17 @@ class Local implements ObjectInterface
 	{
 		return $this->publicUrl;
 	}
+/*
+    public function getPublicFile()
+    {
+        copy($this->path, $this->publicUrl);
+        $img = new \Imagick($this->path);
+        $img->cropThumbnailImage(64, 64);
+        $img->writeImage($this->publicUrl);
 
+        return $this->publicUrl;
+    }
+*/
 	public function getContent()
 	{
 		ob_start();

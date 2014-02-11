@@ -6,6 +6,7 @@ use RdnUpload\File;
 use RdnUpload\File\FileInterface;
 use RdnUpload\Object;
 use Zend\Stdlib\ErrorHandler;
+use RdnUpload\Hydrator\Strategy;
 
 /**
  * Local filesystem storage for uploaded files.
@@ -72,7 +73,6 @@ class Filesystem implements AdapterInterface
 	}
 
 	/**
-	 * @inheritdoc
 	 * @throws \RuntimeException if move operation is unsuccessful
 	 */
 	public function upload($id, FileInterface $input)
@@ -112,11 +112,11 @@ class Filesystem implements AdapterInterface
 		}
 
 		$file = new Object\Local($this->getFilepath($id), $this->getFilepath($id, $this->publicPath));
+
 		return $file;
 	}
 
 	/**
-	 * @inheritdoc
 	 * @throws \RuntimeException if copy operation is unsuccessful
 	 */
 	public function download($id, FileInterface $output)
@@ -139,7 +139,6 @@ class Filesystem implements AdapterInterface
 	}
 
 	/**
-	 * @inheritdoc
 	 * @throws \RuntimeException if file does not exist or delete operation fails
 	 */
 	public function delete($id)

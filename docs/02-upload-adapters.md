@@ -11,10 +11,10 @@ The `rdn_upload_adapters` configuration option is used to configure the service 
 <?php
 
 return array(
-	'rdn_upload_adapters' => array(
-		'factories' => array(),
-		'invokables' => array(),
-	),
+        'rdn_upload_adapters' => array(
+                'factories' => array(),
+                'invokables' => array(),
+        ),
 );
 ~~~
 
@@ -51,39 +51,6 @@ Your project root should look something like this:
  |    `-- uploads/
  |-- module/
  `-- public/
-      |-- files -> ../data/uploads
+      |-- files -> ../../data/uploads
       `-- index.php
 ~~~
-
-## Gaufrette
-
-This adapter will allow you to use a [Gaufrette](https://github.com/KnpLabs/Gaufrette) filesystem with any kind of adapter (local, amazon, openstack, etc.).
-
-~~~php
-<?php
-
-return array(
-	'rdn_upload_adapters' => array(
-		'configs' => array(
-			'Gaufrette' => array(
-				'filesystem' => 'My\GaufretteService',
-				'public_path' => '/files',
-			),
-		),
-	),
-
-	'service_manager' => array(
-		'factories' => array(
-			'My\GaufretteService' => function()
-			{
-				$adapter = new Gaufrette\Adapter\Local('data/uploads');
-				return new Gaufrette\Filesystem($adapter);
-			},
-		),
-	),
-);
-~~~
-
-The `filesystem` configuration option is the name of a service that will return a Gaufrette filesystem object.
-
-The `public_path` configuration option is prepended to uploaded files when generating the object's public URL.
