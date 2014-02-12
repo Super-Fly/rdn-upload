@@ -1,5 +1,5 @@
 {
-	"name": "radnan/rdn-upload",
+	"name": "super-fly/rdn-upload",
 	"description": "Zend Framework 2 module to manage file uploads easily and securely",
 	"keywords": ["zf2", "zend", "file", "upload", "cloud"],
 	"license": "MIT",
