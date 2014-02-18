@@ -101,42 +101,30 @@ class Container implements ContainerInterface
             // Set dimensions string to append
             $dimensionsStr = '__' . $options['resize']['width'] . '_' . $options['resize']['height'];
             // Resize file path
-            $resizeFile = $publicFolder . strstr($obj->getPublicUrl(),'.', TRUE) . $dimensionsStr . '.' . $obj->getExtension();
-            if (!is_file($resizeFile)) {
-
-                // Check is public folders path are created
-                $publicFolderPath = $publicFolder . str_replace($obj->getBasename(), '', $obj->getPublicUrl());
-                if (!is_dir($publicFolderPath)) {
-                    $createdFolders = mkdir($publicFolderPath, 0777, TRUE);
-                    // If we still don't have the folders
-                    if (!$createdFolders) {
-                        throw new \InvalidArgumentException(sprintf(
-                            "Cannot create folders %s"
-                            , $publicFolderPath
-                        ));
-                    }
-                }
-                // If file doesn't exist; create it
-                if (!copy($obj->getPath(), $resizeFile)) {
-                    throw new \InvalidArgumentException(sprintf(
-                        "Image file cannot be copied %s"
-                        , $resizeFile
-                    ));
+            $resizeFile = strstr($obj->getPublicUrl(),'.', TRUE) . $dimensionsStr . '.' . $obj->getExtension();
+            if (!is_file($publicFolder . $resizeFile)) {
+                // Generate file and folders
+                if (!$this->generatePublicFile($resizeFile, $obj, $publicFolder)) {
+                    return FALSE;
                 } else {
                     // Resize with ImageMagic
-                    $img = new \Imagick($resizeFile);
+                    $img = new \Imagick($publicFolder . $resizeFile);
                     $img->cropThumbnailImage($options['resize']['width'], $options['resize']['height']);
-                    $created = $img->writeImage($resizeFile);
+                    $created = $img->writeImage($publicFolder . $resizeFile);
                     if (!$created) {
                         throw new \InvalidArgumentException(sprintf(
                             "ImageMagic cannot write the image %s"
-                            , $resizeFile
+                            , $publicFolder . $resizeFile
                         ));
                     }
                 }
             }
             // Return resized file
             return str_replace($publicFolder, '', $resizeFile);
+        } else {
+            if (!$this->generatePublicFile($obj->getPublicUrl(), $obj, $publicFolder)) {
+                return FALSE;
+            }
         }
 
         return $obj->getPublicUrl();
@@ -176,6 +164,43 @@ class Container implements ContainerInterface
 		}
 
 		return $this->adapter->delete($id);
+	}
+	
+	/**
+	* Generate public file and folders
+	*
+	* @param   string  $publicFile
+	* @param   object  $obj
+	* @param   string  $publicFolder
+	* @return  bool
+	* @throws  \InvalidArgumentException
+	*/
+	protected function generatePublicFile($publicFile, $obj, $publicFolder)
+	{
+		// Check is public folders path are created
+		$publicFolderPath = $publicFolder . str_replace($obj->getBasename(), '', $obj->getPublicUrl());
+		if (!is_dir($publicFolderPath)) {
+		    $createdFolders = mkdir($publicFolderPath, 0777, TRUE);
+		    // If we still don't have the folders
+		    if (!$createdFolders) {
+		        throw new \InvalidArgumentException(sprintf(
+		            "Cannot create folders %s"
+		            , $publicFolderPath
+		        ));
+		        return FALSE;
+		    }
+		}
+		
+		// Copy to public folder
+		if (!copy($obj->getPath(), $publicFolder . $publicFile)) {
+		    throw new \InvalidArgumentException(sprintf(
+		        "Image file cannot be copied %s"
+		        , ($publicFolder . $publicFile)
+		    ));
+		    return FALSE;
+		}
+		
+		return TRUE;
 	}
 
 	/**
