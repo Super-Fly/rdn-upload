@@ -156,14 +156,14 @@ class Container implements ContainerInterface
 		return $this->adapter->has($id);
 	}
 
-	public function delete($id)
+	public function delete($id, $deletePublic = FALSE)
 	{
 		if (empty($id))
 		{
 			throw new \InvalidArgumentException('ID cannot be empty');
 		}
 
-		return $this->adapter->delete($id);
+		return $this->adapter->delete($id, $deletePublic);
 	}
 	
 	/**
