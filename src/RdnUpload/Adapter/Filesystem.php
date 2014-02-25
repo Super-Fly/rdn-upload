@@ -141,7 +141,7 @@ class Filesystem implements AdapterInterface
 	/**
 	 * @throws \RuntimeException if file does not exist or delete operation fails
 	 */
-	public function delete($id)
+	public function delete($id, $deletePublic = FALSE)
 	{
 		if (!$this->has($id))
 		{
@@ -160,6 +160,20 @@ class Filesystem implements AdapterInterface
 		}
 
 		$this->purge($path);
+		
+        // If want to delete and public folders
+        if ($deletePublic) {
+            $publicPath = 'public' . $this->getFilepath($id, $this->publicPath);
+            // Delete thumbs
+            ErrorHandler::start();
+            $publicPathPrefix = strstr($publicPath,'.', TRUE);
+            foreach (glob($publicPathPrefix . '*') as $filename) {
+                unlink($filename);
+            }
+            ErrorHandler::stop(true);
+            // Purge public folders
+            $this->purge($publicPath);
+        }
 	}
 
 	/**
