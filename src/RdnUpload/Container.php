@@ -97,7 +97,9 @@ class Container implements ContainerInterface
         $obj = $this->adapter->get($id);
         //TODO: create CROP method
         // Resize image
-        if (isset($options['resize']) && isset($options['resize']['width']) && isset($options['resize']['height'])) {
+        if (isset($options['resize']) && isset($options['resize']['width'])) {
+            // If we want height to be dynamic, set it to 0
+            $options['resize']['height'] = isset($options['resize']['height']) ? $options['resize']['height'] : 0;
             // Set dimensions string to append
             $dimensionsStr = '__' . $options['resize']['width'] . '_' . $options['resize']['height'];
             // Resize file path
