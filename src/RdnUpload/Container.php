@@ -111,8 +111,20 @@ class Container implements ContainerInterface
                 } else {
                     // Resize with ImageMagic
                     $img = new \Imagick($publicFolder . $resizeFile);
-                    $img->cropThumbnailImage($options['resize']['width'], $options['resize']['height']);
-                    $created = $img->writeImage($publicFolder . $resizeFile);
+                    if ($obj->getExtension() == 'gif') {
+                        $img = $img->coalesceImages();
+
+                        foreach ($img as $frame) {
+                            $frame->thumbnailImage($options['resize']['width'], $options['resize']['height']);
+                            $frame->setImagePage($options['resize']['width'], $options['resize']['height'], 0, 0);
+                        }
+
+                        $img = $img->deconstructImages();
+                        $created = $img->writeImages($publicFolder . $resizeFile, true);
+                    } else {
+                        $img->cropThumbnailImage($options['resize']['width'], $options['resize']['height']);
+                        $created = $img->writeImage($publicFolder . $resizeFile);
+                    }
                     if (!$created) {
                         throw new \InvalidArgumentException(sprintf(
                             "ImageMagic cannot write the image %s"
