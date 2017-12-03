@@ -3,19 +3,24 @@
 namespace RdnUpload\Factory;
 
 use RdnUpload;
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Interop\Container\ContainerInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
 
 class Container implements FactoryInterface
 {
-	public function createService(ServiceLocatorInterface $services)
-	{
-		$config = $services->get('Config');
-		$config = $config['rdn_upload'];
 
-		$adapters = $services->get('RdnUpload\Adapter\AdapterManager');
-		$adapter = $adapters->get($config['adapter']);
+    /**
+     * @inheritdoc
+     * @return \RdnUpload\Container
+     */
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    {
+        $config = $container->get('Config');
 
-		return new RdnUpload\Container($adapter, $config['temp_dir']);
-	}
+        $adapters = $container->get(RdnUpload\Adapter\AdapterManager::class);
+        $adapter = $adapters->get($config['rdn_upload']['adapter']);
+
+        return new RdnUpload\Container($adapter, $config);
+    }
+
 }

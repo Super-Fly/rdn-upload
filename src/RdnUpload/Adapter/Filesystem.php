@@ -13,160 +13,181 @@ use RdnUpload\Hydrator\Strategy;
  */
 class Filesystem implements AdapterInterface
 {
-	/**
-	 * The upload path where uploaded files are stored.
-	 *
-	 * @var string
-	 */
-	protected $uploadPath;
+    /**
+     * The upload path where uploaded files are stored.
+     *
+     * @var string
+     */
+    protected $uploadPath;
 
-	/**
-	 * The public path from where uploaded files are served.
-	 *
-	 * @var string
-	 */
-	protected $publicPath;
+    /**
+     * The public path from where uploaded files are served.
+     *
+     * @var string
+     */
+    protected $publicPath;
 
-	/**
-	 * @param string $uploadPath
-	 * @param string $publicPath
-	 *
-	 * @throws \RuntimeException
-	 * @throws \InvalidArgumentException
-	 */
-	public function __construct($uploadPath, $publicPath)
-	{
-		if (empty($uploadPath))
-		{
-			throw new \InvalidArgumentException('Must provide an upload directory');
-		}
+    /**
+     * @param string $uploadPath
+     * @param string $publicPath
+     *
+     * @throws \RuntimeException
+     * @throws \InvalidArgumentException
+     */
+    public function __construct($uploadPath, $publicPath)
+    {
+        if (empty($uploadPath)) {
+            throw new \InvalidArgumentException('Must provide an upload directory');
+        }
 
-		if (!is_writeable($uploadPath))
-		{
-			throw new \RuntimeException("Cannot write to directory ($uploadPath)");
-		}
+        if (!is_writeable($uploadPath)) {
+            throw new \RuntimeException("Cannot write to directory ($uploadPath)");
+        }
 
-		$this->uploadPath = rtrim($uploadPath, DIRECTORY_SEPARATOR);
-		$this->publicPath = rtrim($publicPath, DIRECTORY_SEPARATOR);
-	}
+        $this->uploadPath = rtrim($uploadPath, DIRECTORY_SEPARATOR);
+        $this->publicPath = rtrim($publicPath, DIRECTORY_SEPARATOR);
+    }
 
-	/**
-	 * Get the full file path of a file with the given id and an optional path prefix.
-	 *
-	 * @param string $id
-	 * @param string $pathPrefix
-	 *
-	 * @return string
-	 */
-	protected function getFilepath($id, $pathPrefix = null)
-	{
-		if ($pathPrefix === null)
-		{
-			$pathPrefix = $this->uploadPath;
-		}
-		else
-		{
-			$pathPrefix = rtrim($pathPrefix, DIRECTORY_SEPARATOR);
-		}
+    /**
+     * Get the full file path of a file with the given id and an optional path prefix.
+     *
+     * @param string $id
+     * @param string $pathPrefix
+     *
+     * @return string
+     */
+    protected function getFilepath($id, $pathPrefix = null)
+    {
+        if ($pathPrefix === null) {
+            $pathPrefix = $this->uploadPath;
+        } else {
+            $pathPrefix = rtrim($pathPrefix, DIRECTORY_SEPARATOR);
+        }
 
-		return $pathPrefix . DIRECTORY_SEPARATOR . $id;
-	}
+        return $pathPrefix . DIRECTORY_SEPARATOR . $id;
+    }
 
-	/**
-	 * @throws \RuntimeException if move operation is unsuccessful
-	 */
-	public function upload($id, FileInterface $input)
-	{
-		$targetPath = $this->getFilepath($id);
-		$targetDir = dirname($targetPath);
-		if (!is_dir($targetDir))
-		{
-			mkdir($targetDir, 0777, true);
-		}
+    /**
+     * @throws \RuntimeException if move operation is unsuccessful
+     */
+    public function upload($id, FileInterface $input)
+    {
+        $targetPath = $this->getFilepath($id);
+        $targetDir = dirname($targetPath);
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0777, true);
+        }
 
-		ErrorHandler::start();
-		if ($input instanceof File\Input)
-		{
-			$flag = move_uploaded_file($input->getPath(), $targetPath);
-		}
-		else
-		{
-			$flag = rename($input->getPath(), $targetPath);
-			chmod($targetPath, 0660);
-		}
-		ErrorHandler::stop(true);
+        ErrorHandler::start();
+        if ($input instanceof File\Input) {
+            $flag = move_uploaded_file($input->getPath(), $targetPath);
+        } else {
+            $flag = rename($input->getPath(), $targetPath);
+            chmod($targetPath, 0660);
+        }
+        ErrorHandler::stop(true);
 
-		if (!$flag)
-		{
-			$this->purge($targetPath);
+        if (!$flag) {
+            $this->purge($targetPath);
 
-			throw new \RuntimeException("Could not move file ({$input->getPath()})");
-		}
-	}
+            throw new \RuntimeException("Could not move file ({$input->getPath()})");
+        }
+    }
 
-	public function get($id)
-	{
-		if (!$this->has($id))
-		{
-			throw new \RuntimeException("File does not exist ($id)");
-		}
+    /**
+     * Fake upload
+     *
+     * @param   string $id
+     * @param   string $filename
+     * @param   string $path
+     * @throws  \RuntimeException
+     */
+    public function fakeUpload($id, $filename, $path)
+    {
+        $targetPath = $this->getFilepath($id);
+        $targetDir = dirname($targetPath);
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0777, true);
+        }
 
-		$file = new Object\Local($this->getFilepath($id), $this->getFilepath($id, $this->publicPath));
+        ErrorHandler::start();
+        $flag = copy($path . $filename, $targetPath);
+//        chmod($targetPath, 0660);
+        ErrorHandler::stop(true);
 
-		return $file;
-	}
+        if (!$flag) {
+            $this->purge($targetPath);
 
-	/**
-	 * @throws \RuntimeException if copy operation is unsuccessful
-	 */
-	public function download($id, FileInterface $output)
-	{
-		$source = $this->getFilepath($id);
+            throw new \RuntimeException("Could not copy file (" . $path . $filename . ")");
+        }
+    }
 
-		ErrorHandler::start();
-		$flag = copy($source, $output->getPath());
-		ErrorHandler::stop(true);
+    /**
+     * Get file
+     *
+     * @param   string $id
+     * @return  Object\Local|Object\ObjectInterface
+     * @throws  \RuntimeException
+     */
+    public function get($id)
+    {
+        if (!$this->has($id)) {
+            throw new \RuntimeException("File does not exist ($id)");
+        }
 
-		if (!$flag)
-		{
-			throw new \RuntimeException("Could not copy file ({$source})");
-		}
-	}
+        $file = new Object\Local($this->getFilepath($id), $this->getFilepath($id, $this->publicPath));
 
-	public function has($id)
-	{
-		return file_exists($this->getFilepath($id));
-	}
+        return $file;
+    }
 
-	/**
-	 * @throws \RuntimeException if file does not exist or delete operation fails
-	 */
-	public function delete($id, $deletePublic = FALSE)
-	{
-		if (!$this->has($id))
-		{
-			throw new \RuntimeException("File does not exist ($id)");
-		}
+    /**
+     * @throws \RuntimeException if copy operation is unsuccessful
+     */
+    public function download($id, FileInterface $output)
+    {
+        $source = $this->getFilepath($id);
 
-		$path = $this->getFilepath($id);
+        ErrorHandler::start();
+        $flag = copy($source, $output->getPath());
+        ErrorHandler::stop(true);
 
-		ErrorHandler::start();
-		$flag = unlink($path);
-		ErrorHandler::stop(true);
+        if (!$flag) {
+            throw new \RuntimeException("Could not copy file ({$source})");
+        }
+    }
 
-		if (!$flag)
-		{
-			throw new \RuntimeException("Could not delete file ($path)");
-		}
+    public function has($id)
+    {
+        return file_exists($this->getFilepath($id));
+    }
 
-		$this->purge($path);
-		
+    /**
+     * @throws \RuntimeException if file does not exist or delete operation fails
+     */
+    public function delete($id, $deletePublic = FALSE)
+    {
+        if (!$this->has($id)) {
+            throw new \RuntimeException("File does not exist ($id)");
+        }
+
+        $path = $this->getFilepath($id);
+
+        ErrorHandler::start();
+        $flag = unlink($path);
+        ErrorHandler::stop(true);
+
+        if (!$flag) {
+            throw new \RuntimeException("Could not delete file ($path)");
+        }
+
+        $this->purge($path);
+
         // If want to delete and public folders
         if ($deletePublic) {
             $publicPath = 'public' . $this->getFilepath($id, $this->publicPath);
             // Delete thumbs
             ErrorHandler::start();
-            $publicPathPrefix = strstr($publicPath,'.', TRUE);
+            $publicPathPrefix = strstr($publicPath, '.', TRUE);
             foreach (glob($publicPathPrefix . '*') as $filename) {
                 unlink($filename);
             }
@@ -174,25 +195,23 @@ class Filesystem implements AdapterInterface
             // Purge public folders
             $this->purge($publicPath);
         }
-	}
+    }
 
-	/**
-	 * Remove all empty directories starting from the leaf node and moving all the way up to the upload path.
-	 *
-	 * @param string $path
-	 */
-	protected function purge($path)
-	{
-		$directory = pathinfo($path, PATHINFO_DIRNAME);
-		while ($directory != $this->uploadPath)
-		{
-			if (count(glob($directory .'/*')))
-			{
-				break;
-			}
+    /**
+     * Remove all empty directories starting from the leaf node and moving all the way up to the upload path.
+     *
+     * @param string $path
+     */
+    protected function purge($path)
+    {
+        $directory = pathinfo($path, PATHINFO_DIRNAME);
+        while ($directory != $this->uploadPath) {
+            if (count(glob($directory . '/*'))) {
+                break;
+            }
 
-			rmdir($directory);
-			$directory = dirname($directory);
-		}
-	}
+            rmdir($directory);
+            $directory = dirname($directory);
+        }
+    }
 }

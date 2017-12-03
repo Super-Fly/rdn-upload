@@ -14,152 +14,200 @@ use Zend\Mvc\Controller\Plugin\AbstractPlugin;
  */
 class Uploads extends AbstractPlugin
 {
-	/**
-	 * @var ContainerInterface
-	 */
-	protected $container;
+    /**
+     * @var ContainerInterface
+     */
+    protected $container;
 
-	public function __construct(ContainerInterface $container)
-	{
-		$this->container = $container;
-	}
+    public function __construct(ContainerInterface $container)
+    {
+        $this->container = $container;
+    }
 
-	/**
-	 * Return the file object if an id is given, otherwise return the plugin itself.
-	 *
-	 * @param string $id
-	 *
-	 * @return self|ObjectInterface
-	 */
-	public function __invoke($id = null)
-	{
-		if (func_num_args() == 0)
-		{
-			return $this;
-		}
+    /**
+     * Return the file object if an id is given, otherwise return the plugin itself.
+     *
+     * @param string $id
+     *
+     * @return self|ObjectInterface
+     */
+    public function __invoke($id = null)
+    {
+        if (func_num_args() == 0)
+        {
+            return $this;
+        }
 
-		return $this->get($id);
-	}
+        return $this->get($id);
+    }
 
-	/**
-	 * Return a response object for a given file.
-	 *
-	 * @param string $id
-	 * @param string $filename Filename to use instead of the file's actual basename
-	 *
-	 * @return HttpResponse
-	 */
-	public function getResponse($id, $filename = null)
-	{
-		$object = $this->container->get($id);
+    /**
+     * Return a response object for a given file.
+     *
+     * @param string $id
+     * @param string $filename Filename to use instead of the file's actual basename
+     *
+     * @return HttpResponse
+     */
+    public function getResponse($id, $filename = null)
+    {
+        $object = $this->container->get($id);
 
-		if ($filename === null)
-		{
-			$filename = $object->getBasename();
-		}
+        if ($filename === null)
+        {
+            $filename = $object->getBasename();
+        }
 
-		if (!pathinfo($filename, PATHINFO_EXTENSION))
-		{
-			$filename .= '.'. $object->getExtension();
-		}
+        if (!pathinfo($filename, PATHINFO_EXTENSION))
+        {
+            $filename .= '.'. $object->getExtension();
+        }
 
-		/** @var HttpResponse $response */
-		$response = $this->controller->getResponse();
+        /** @var HttpResponse $response */
+        $response = $this->controller->getResponse();
 
-		$response->setContent(new LazyResponse($object));
-		$response->getHeaders()->addHeaders(array(
-			'Content-Type' => 'application/octet-stream',
-			'Content-Disposition' => 'attachment;filename="'. str_replace('"', '\\"', $filename) .'"',
-			'Content-Transfer-Encoding' => 'binary',
-			'Expires' => '-1 year',
-			'Cache-Control' => 'must-revalidate',
-			'Pragma' => 'public',
-			'Content-Length' => $object->getContentLength(),
-		));
+        $response->setContent(new LazyResponse($object));
+        $response->getHeaders()->addHeaders(array(
+            'Content-Type' => 'application/octet-stream',
+            'Content-Disposition' => 'attachment;filename="'. str_replace('"', '\\"', $filename) .'"',
+            'Content-Transfer-Encoding' => 'binary',
+            'Expires' => '-1 year',
+            'Cache-Control' => 'must-revalidate',
+            'Pragma' => 'public',
+            'Content-Length' => $object->getContentLength(),
+        ));
 
-		return $response;
-	}
+        return $response;
+    }
 
-	/**
-	 * Generate a thumbnail from an object and return the ID of the new object.
-	 *
-	 * @param string $id
-	 * @param int $width
-	 * @param int $height
-	 *
-	 * @return string
-	 */
-	public function generateThumbnail($id, $width, $height = null)
-	{
-		if ($height === null)
-		{
-			$height = $width;
-		}
+    /**
+     * Generate a thumbnail from an object and return the ID of the new object.
+     *
+     * @param string $id
+     * @param int $width
+     * @param int $height
+     *
+     * @return string
+     */
+    public function generateThumbnail($id, $width, $height = null)
+    {
+        if ($height === null)
+        {
+            $height = $width;
+        }
 
-		$temp = $this->container->download($id);
+        $temp = $this->container->download($id);
 
-		$img = new \Imagick($temp->getPath());
-		$img->cropThumbnailImage($width, $height);
-		$img->writeImage();
+        try {
+            $img = new \Imagick($temp->getPath());
+            $img->cropThumbnailImage($width, $height);
+            $img->writeImage();
+        } catch (Exception $e) {
+            // noop
+        }
 
-		return $this->container->upload($temp);
-	}
+        return $this->container->upload($temp);
+    }
 
-	/**
-	 * Get the upload container.
-	 *
-	 * @return ContainerInterface
-	 */
-	public function getContainer()
-	{
-		return $this->container;
-	}
+    /**
+     * Get the upload container.
+     *
+     * @return ContainerInterface
+     */
+    public function getContainer()
+    {
+        return $this->container;
+    }
 
-	/**
-	 * @param array|FileInterface $input
-	 *
-	 * @return string
-	 */
-	public function upload($input)
-	{
-		return $this->container->upload($input);
-	}
+    /**
+     * @param array|FileInterface $input
+     *
+     * @return string
+     */
+    public function upload($input)
+    {
+        return $this->container->upload($input);
+    }
 
-	/**
-	 * @param string $id
-	 *
-	 * @return ObjectInterface
-	 */
-	public function get($id)
-	{
-		return $this->container->get($id);
-	}
+    /**
+     * @param   string  $filename
+     * @param   string  $path
+     *
+     * @return  string
+     */
+    public function fakeUpload($filename, $path)
+    {
+        return $this->container->fakeUpload($filename, $path);
+    }
 
-	/**
-	 * @param string $id
-	 *
-	 * @return FileInterface
-	 */
-	public function download($id)
-	{
-		return $this->container->download($id);
-	}
+    /**
+     * @param   string  $base64
+     * @param   string  $name
+     *
+     * @return  string
+     */
+    public function stringUpload($base64, $name = NULL)
+    {
+        return $this->container->stringUpload($base64, $name);
+    }
 
-	/**
-	 * @param string $id
-	 *
-	 * @return boolean
-	 */
-	public function has($id)
-	{
-		return $this->container->has($id);
-	}
+    /**
+     * @param   string  $url
+     * @param   string  $name
+     *
+     * @return  string
+     */
+    public function urlUpload($url, $name = null)
+    {
+        return $this->container->urlUpload($url, $name);
+    }
 
-	/**
-	 * @param string $id
-	 */
-	public function delete($id)
-	{
-		return $this->container->delete($id);
-	}
+    /**
+     * @param   string  $id
+     * @param   array   $options
+     *
+     * @return string
+     */
+    public function getPublicFile($id, array $options = array())
+    {
+        return $this->container->getPublicFile($id, $options);
+    }
+
+    /**
+     * @param string $id
+     *
+     * @return ObjectInterface
+     */
+    public function get($id)
+    {
+        return $this->container->get($id);
+    }
+
+    /**
+     * @param string $id
+     *
+     * @return FileInterface
+     */
+    public function download($id)
+    {
+        return $this->container->download($id);
+    }
+
+    /**
+     * @param string $id
+     *
+     * @return boolean
+     */
+    public function has($id)
+    {
+        return $this->container->has($id);
+    }
+
+    /**
+     * @param string $id
+     */
+    public function delete($id)
+    {
+        return $this->container->delete($id);
+    }
 }

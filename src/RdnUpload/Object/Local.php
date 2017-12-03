@@ -9,77 +9,67 @@ use DateTime;
  */
 class Local implements ObjectInterface
 {
-	/**
-	 * @var string
-	 */
-	protected $path;
+    /**
+     * @var string
+     */
+    protected $path;
 
-	/**
-	 * @var string
-	 */
-	protected $publicUrl;
+    /**
+     * @var string
+     */
+    protected $publicUrl;
 
-	/**
-	 * @param string $path The upload path to the file.
-	 * @param string $publicUrl The public path to the file.
-	 */
-	public function __construct($path, $publicUrl)
-	{
-		$this->path = $path;
-		$this->publicUrl = $publicUrl;
-	}
-
-	public function getPath()
-	{
-		return $this->path;
-	}
-
-	public function getPublicUrl()
-	{
-		return $this->publicUrl;
-	}
-/*
-    public function getPublicFile()
+    /**
+     * @param string $path The upload path to the file.
+     * @param string $publicUrl The public path to the file.
+     */
+    public function __construct($path, $publicUrl)
     {
-        copy($this->path, $this->publicUrl);
-        $img = new \Imagick($this->path);
-        $img->cropThumbnailImage(64, 64);
-        $img->writeImage($this->publicUrl);
+        $this->path = $path;
+        $this->publicUrl = str_replace(DIRECTORY_SEPARATOR, '/', $publicUrl);
+    }
 
+    public function getPath()
+    {
+        return $this->path;
+    }
+
+    public function getPublicUrl()
+    {
         return $this->publicUrl;
     }
-*/
-	public function getContent()
-	{
-		ob_start();
-		readfile($this->path);
-		return ob_get_clean();
-	}
 
-	public function getBasename()
-	{
-		return pathinfo($this->path, PATHINFO_BASENAME);
-	}
+    public function getContent()
+    {
+        ob_start();
+        readfile($this->path);
+        return ob_get_clean();
+    }
 
-	public function getExtension()
-	{
-		return pathinfo($this->path, PATHINFO_EXTENSION);
-	}
+    public function getBasename()
+    {
+        return pathinfo($this->path, PATHINFO_BASENAME);
+    }
 
-	public function getContentLength()
-	{
-		return filesize($this->path);
-	}
+    public function getExtension()
+    {
+        return pathinfo($this->path, PATHINFO_EXTENSION);
+    }
 
-	public function getLastModified()
-	{
-		$time = new DateTime;
-		$time->setTimestamp(filemtime($this->path));
-		return $time;
-	}
+    public function getContentLength()
+    {
+        return filesize($this->path);
+    }
 
-	public function __toString()
-	{
-		return $this->publicUrl;
-	}
+    public function getLastModified()
+    {
+        $time = new DateTime;
+        $time->setTimestamp(filemtime($this->path));
+        return $time;
+    }
+
+    public function __toString()
+    {
+        return $this->publicUrl;
+    }
 }
