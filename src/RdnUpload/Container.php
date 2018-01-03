@@ -231,8 +231,12 @@ class Container implements ContainerInterface
         // Get the File Object
         $obj = $this->adapter->get($id);
 
+        // Scale image
+        if (isset($options['scale'])) {
+            return $this->scaleImage($obj, $options, $publicFolder);
+        }
         // Resize image
-        if (isset($options['resize']) && isset($options['resize']['width'])) {
+        elseif (isset($options['resize']) && isset($options['resize']['width'])) {
             // If we want height to be dynamic, set it to 0
             $options['resize']['height'] = isset($options['resize']['height']) ? $options['resize']['height'] : 0;
 
@@ -419,24 +423,152 @@ class Container implements ContainerInterface
             $createdFolders = mkdir($publicFolderPath, 0777, TRUE);
             // If we still don't have the folders
             if (!$createdFolders) {
-                throw new \InvalidArgumentException(sprintf(
-                    "Cannot create folders %s"
-                    , $publicFolderPath
-                ));
+//                throw new \InvalidArgumentException(sprintf(
+//                    "Cannot create folders %s"
+//                    , $publicFolderPath
+//                ));
                 return FALSE;
             }
         }
 
         // Copy to public folder
         if (!copy($obj->getPath(), $publicFolder . $publicFile)) {
-            throw new \InvalidArgumentException(sprintf(
-                "Image file cannot be copied %s"
-                , ($publicFolder . $publicFile)
-            ));
+//            throw new \InvalidArgumentException(sprintf(
+//                "Image file cannot be copied %s"
+//                , ($publicFolder . $publicFile)
+//            ));
             return FALSE;
         }
 
         return TRUE;
+    }
+
+    /**
+     * Build the URL
+     *
+     * @param   string    $publicFolder
+     * @param   string    $file
+     * @return  string
+     */
+    protected function buildUrl($publicFolder, $file)
+    {
+        $readyImage = str_replace($publicFolder, '', $file);
+        if (isset($this->config['global']['media']['url'])) {
+            return $this->config['global']['media']['url'] . ltrim($readyImage, '/');
+        }
+        return $readyImage;
+    }
+
+    /**
+     * Scale the RAW image
+     *
+     * @param   string  $id
+     * @param   array   $options
+     * @return  bool|string
+     */
+    public function scaleRawImage($id, array $options = array())
+    {
+        if (!$this->has($id)) {
+            return FALSE;
+        }
+
+        // Get the File Object
+        $obj = $this->adapter->get($id);
+
+        // Scale image
+        if (isset($options['width']) == FALSE && isset($options['height']) == FALSE) {
+            return FALSE;
+        }
+        // For the HORDE
+        $options['scale'] = $options;
+
+        return $this->scaleImage($obj, $options, null);
+    }
+
+    /**
+     * @param   ObjectInterface $obj
+     * @param   array           $options
+     * @param   string          $publicFolder
+     * @return  bool|string
+     */
+    protected function scaleImage($obj, $options, $publicFolder)
+    {
+        // If we want height or width to be dynamic, set it to 0, it won't work with best fit = true
+        $height = isset($options['scale']['height']) ? $options['scale']['height'] : 0;
+        $width  = isset($options['scale']['width']) ? $options['scale']['width'] : 0;
+        // The image will only scale down, but never scale up if TRUE - http://php.net/manual/en/imagick.scaleimage.php#92407
+        $bestfit = isset($options['scale']['fit']) ? $options['scale']['fit'] : TRUE;
+        $quality = isset($options['scale']['quality']) ? $options['scale']['quality'] : 75;
+
+        // This is ONLY if we want to make public file
+        if ($publicFolder !== NULL) {
+            // Set dimensions string to append
+            $dimensionsStr = '__' . $width . '_' . $height;
+
+            // File path
+            $scaledFile = strstr($obj->getPublicUrl(), '.', TRUE) . $dimensionsStr . '.' . $obj->getExtension();
+
+            // If the file already exists, do not scale it again
+            if (is_file($publicFolder . $scaledFile)) {
+                return $this->buildUrl($publicFolder, $scaledFile);
+            }
+
+            // Generate file and folders
+            $isGenerated = $this->generatePublicFile($scaledFile, $obj, $publicFolder);
+            if ($isGenerated === FALSE) {
+                return FALSE;
+            }
+
+            $fPath = realpath($publicFolder . $scaledFile);
+        } else {
+            $fPath = realpath($obj->getPath());
+        }
+
+        try {
+            $img = new \Imagick($fPath);
+        } catch (Exception $e) {
+            return FALSE;
+        }
+
+        if ($obj->getExtension() == 'gif') {
+            $img = $img->coalesceImages();
+
+            foreach ($img as $frame) {
+                $frame->scaleImage($width, $height, $bestfit);
+            }
+
+            $img = $img->deconstructImages();
+            $created = $img->writeImages($fPath, true);
+        } else {
+            $img->scaleImage($width, $height, $bestfit);
+
+            // Compression and remove unused data
+            $img->setImageCompression(\Imagick::COMPRESSION_JPEG);
+            $img->setImageCompressionQuality($quality);
+            $img->stripImage();
+
+            // Save Progressive image
+            $img->setInterlaceScheme(\Imagick::INTERLACE_PLANE);
+
+            $created = $img->writeImage($fPath);
+            $img->destroy();
+        }
+
+        // On fail
+        if (!$created) {
+            return FALSE;
+            //TODO: Log error?
+//            throw new \InvalidArgumentException(sprintf(
+//                "ImageMagic cannot write the image %s"
+//                , $publicFolder . $scaledFile
+//            ));
+        }
+
+        // This is ONLY if we want to make public file
+        if ($publicFolder !== NULL) {
+            return $this->buildUrl($publicFolder, $scaledFile);
+        }
+        return $obj->getPath();
     }
 
     /**

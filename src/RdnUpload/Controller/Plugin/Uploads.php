@@ -184,6 +184,17 @@ class Uploads extends AbstractPlugin
     }
 
     /**
+     * @param   string  $id
+     * @param   array   $options
+     *
+     * @return string
+     */
+    public function scaleRawImage($id, array $options = array())
+    {
+        return $this->container->scaleRawImage($id, $options);
+    }
+
+    /**
      * @param string $id
      *
      * @return FileInterface
