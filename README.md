@@ -201,3 +201,13 @@ You have access to the following methods from this helper:
 * `get($id)`
 * `has($id)`
 * `getContainer()` - Returns the upload container.
+
+## Synchronization mode
+
+### Server
+
+to start the server you need to copy configuration file `vendor/super-fly/rdn-upload/config/rdn-upload-server.local.php` to `config/autoload/rdn-upload-server.local.php` and set a new `access_token` value. 
+
+### Client
+
+copy configuration file from `vendor/super-fly/rdn-upload/config/rdn-upload-client.local.php` to `config/autoload/rdn-upload-client.local.php` and set a `access_token`, URL to server `host` (if server have HTTP authentication set `host_access` -> `username` and `host_access` -> `password`)

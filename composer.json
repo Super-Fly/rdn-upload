@@ -14,7 +14,8 @@
 		"zendframework/zend-mvc": "2.*",
 		"zendframework/zend-servicemanager": "2.*",
 		"zendframework/zend-stdlib": "2.*",
-		"zendframework/zend-view": "2.*"
+		"zendframework/zend-view": "2.*",
+                "zendframework/zend-json": "^2.0"
 	},
 	"require-dev": {
 		"mikey179/vfsStream": "*",
